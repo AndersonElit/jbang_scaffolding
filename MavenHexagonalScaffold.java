@@ -7,13 +7,16 @@ import java.nio.file.*;
 import java.util.List;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Option;
 
 @Command(name = "MavenHexagonalScaffold", mixinStandardHelpOptions = true, version = "1.0",
         description = "Genera un proyecto base Spring Boot Reactivo multimódulo.")
 public class MavenHexagonalScaffold implements Runnable {
 
-    @Parameters(index = "0", description = "Nombre del microservicio", defaultValue = "mi-microservicio")
+    @Option(names = {"-n", "--service-name"},
+            description = "Nombre del microservicio",
+            defaultValue = "mi-microservicio",
+            required = true)
     private String projectName;
 
     public static void main(String... args) {
