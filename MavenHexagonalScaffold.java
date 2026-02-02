@@ -1,3 +1,7 @@
+///usr/bin/env jbang "$0" "$@" ; exit $?
+//DEPS info.picocli:picocli:4.7.5
+//JAVA 17+
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
