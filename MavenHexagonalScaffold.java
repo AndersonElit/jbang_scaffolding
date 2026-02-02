@@ -19,6 +19,12 @@ public class MavenHexagonalScaffold implements Runnable {
             required = true)
     private String projectName;
 
+    @Option(names = {"-d", "--database"},
+            description = "Base de datos a configurar: postgres, mongo",
+            defaultValue = "postgres",
+            required = true)
+    private String database;
+
     public static void main(String... args) {
         int exitCode = new CommandLine(new MavenHexagonalScaffold()).execute(args);
         System.exit(exitCode);
@@ -90,17 +96,8 @@ public class MavenHexagonalScaffold implements Runnable {
                     Path resourcesPath = rootPath.resolve(module + "/src/main/resources");
                     Files.createDirectories(resourcesPath);
 
-                    // 2. Definir el contenido del application.properties
-                    String propertiesContent = """
-                            spring.r2dbc.url=r2dbc:postgresql://localhost:5432/mydb
-                            spring.r2dbc.username=postgres
-                            spring.r2dbc.password=password
-                            spring.sql.init.mode=always
-                            server.port=8080
-                            """;
-
                     // 3. Escribir el archivo
-                    Files.writeString(resourcesPath.resolve("application.properties"), propertiesContent);
+                    Files.writeString(resourcesPath.resolve("application.properties"), getPropertiesContent());
                 }
             }
 
@@ -136,6 +133,22 @@ public class MavenHexagonalScaffold implements Runnable {
 
         } catch (IOException e) {
             System.err.println("[ERROR] No se pudo crear el proyecto: " + e.getMessage());
+        }
+    }
+
+    private String getPropertiesContent() {
+        if ("mongo".equalsIgnoreCase(database)) {
+            return """
+                    spring.data.mongodb.uri=mongodb://localhost:27017/mydb
+                    server.port=8080
+                    """;
+        } else {
+            return """
+                    spring.r2dbc.url=r2dbc:postgresql://localhost:5432/mydb
+                    spring.r2dbc.username=postgres
+                    spring.r2dbc.password=password
+                    server.port=8080
+                    """;
         }
     }
 
@@ -214,17 +227,26 @@ public class MavenHexagonalScaffold implements Runnable {
 
         // Inyección de dependencias específicas por módulo
         if (modulePath.equals("infrastructure/driven-adapters")) {
-            sb.append("""
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-data-r2dbc</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.postgresql</groupId>
-                    <artifactId>r2dbc-postgresql</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-            """);
+            if ("mongo".equalsIgnoreCase(database)) {
+                sb.append("""
+                    <dependency>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-data-mongodb-reactive</artifactId>
+                    </dependency>
+                """);
+            } else {
+                sb.append("""
+                    <dependency>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-data-r2dbc</artifactId>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>r2dbc-postgresql</artifactId>
+                        <scope>runtime</scope>
+                    </dependency>
+                """);
+            }
         } else if (modulePath.equals("infrastructure/entry-points")) {
             sb.append("""
                 <dependency>
